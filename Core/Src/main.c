@@ -103,7 +103,7 @@ HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_3);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  setPWM_pb0(5000);
+  setPWM_pb0(2000);
   while (1)
   {
     /* USER CODE END WHILE */

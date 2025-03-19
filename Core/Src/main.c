@@ -20,11 +20,12 @@
 #include "main.h"
 #include "can.h"
 #include "tim.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,6 +35,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+int32_t PWM = 750;
+volatile uint32_t captured_value;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -65,6 +68,23 @@ uint32_t              TxMailbox;
 CAN_RxHeaderTypeDef   RxHeader;
 uint8_t               RxData[8];
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim == &htim2) {
+    switch (HAL_TIM_GetActiveChannel(&htim2)) {
+      case HAL_TIM_ACTIVE_CHANNEL_1:
+        captured_value = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+      break;
+      default:
+        break;
+    }
+  }
+}
+int __io_putchar(int ch)
+{
+  HAL_UART_Transmit(&huart2, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
+  return 1;
+}
 /* USER CODE END 0 */
 
 /**
@@ -97,15 +117,27 @@ int main(void)
   MX_GPIO_Init();
   MX_CAN_Init();
   MX_TIM3_Init();
+  MX_TIM2_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_3);
+HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_Base_Start(&htim2); //encoder timer
+  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  setPWM_pb0(2000);
+  
   while (1)
   {
+    setPWM(PWM,TIM_CHANNEL_2);
+    //printf("hello world\n\r");
+    if (captured_value != 0) {
+      printf("value = %lu\n\r", captured_value);
+      captured_value = 0;
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
